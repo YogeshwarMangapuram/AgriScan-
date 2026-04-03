@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriScan | Freshness You Can Trust</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --accent: #ffbe0b;
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-dark: rgba(0, 0, 0, 0.6);
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: #0d1f17; 
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        /* ORIGINAL FRUIT/VEG BACKGROUND */
+        .bg-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), 
+                        url('https://images.unsplash.com/photo-1610348725531-843dff563e2c?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            z-index: -1;
+        }
+
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1.5rem; backdrop-filter: blur(10px);
+            background: rgba(0,0,0,0.3);
+        }
+        .nav-logo { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 900; letter-spacing: -1px; }
+        .nav-logo span { color: var(--accent); }
+
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 0 10%;
+        }
+        .hero-glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(25px);
+            padding: 4rem 2rem;
+            border-radius: 40px;
+            border: 1px solid rgba(255,255,255,0.2);
+            max-width: 850px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+        .hero h1 { 
+            font-family: 'Playfair Display', serif; 
+            font-size: clamp(2.5rem, 7vw, 4.5rem); 
+            line-height: 1.1; 
+            margin-bottom: 1.5rem;
+            font-weight: 900;
+        }
+        .hero h1 em { font-style: italic; color: var(--accent); }
+        .hero p { 
+            font-size: 1.3rem; 
+            color: rgba(255,255,255,0.95); 
+            margin-bottom: 2.5rem;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        #admin-panel { padding: 5rem 5%; }
+        .admin-form { 
+            background: rgba(255,255,255,0.05); 
+            backdrop-filter: blur(15px);
+            padding: 2.5rem; 
+            border-radius: 30px; 
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label { color: var(--accent); font-size: 0.75rem; letter-spacing: 1.5px; display: block; margin-bottom: 6px; text-transform: uppercase; }
+        .form-group input, .form-group select {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 1rem;
+            border-radius: 15px;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        .btn-primary { 
+            background: #fff; 
+            color: #000; 
+            padding: 1.2rem 3rem; 
+            border-radius: 50px; 
+            font-weight: 800; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary:hover { 
+            transform: scale(1.05); 
+            box-shadow: 0 10px 30px rgba(255,255,255,0.3);
+        }
+
+        .scanner-fab {
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            background: #4361ee; 
+            color: white; padding: 18px 36px;
+            border-radius: 100px; font-weight: 800; z-index: 999;
+            box-shadow: 0 10px 40px rgba(67, 97, 238, 0.4);
+            display: flex; gap: 12px; align-items: center;
+            cursor: pointer;
+        }
+
+        .qr-display {
+            background: white; border-radius: 24px; padding: 25px;
+        }
+
+        .admin-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 2rem; margin-top: 3rem; }
+        @media (max-width: 800px) { .admin-grid { grid-template-columns: 1fr; } }
+        
+        #resultModal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
+            backdrop-filter: blur(10px); display: none; 
+            align-items: center; justify-content: center; z-index: 3000;
+        }
+        .modal-card {
+            background: #fff; color: #1a1a1a; padding: 2.5rem;
+            border-radius: 32px; width: 90%; max-width: 420px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="bg-overlay"></div>
+
+<nav>
+    <div class="nav-logo">Agri<span>Scan</span></div>
+</nav>
+
+<section class="hero">
+    <div class="hero-glass-card">
+        <h1>Freshness You Can <em>Feel</em>.<br>Honesty You Can <em>Taste</em>.</h1>
+        <p>Bringing the sunshine of the farm directly to your table. Scan to meet the growers behind your favorite greens and eat with a smile.</p>
+        <button onclick="document.getElementById('admin-panel').scrollIntoView({behavior:'smooth'})" class="btn-primary">Go to Dashboard</button>
+    </div>
+</section>
+
+<section id="admin-panel">
+    <div id="admin-login" class="admin-form" style="max-width: 450px; margin: 0 auto;">
+        <h3 style="text-align:center; margin-bottom:2rem; font-family:'Playfair Display'; font-size:2rem;">Staff Login</h3>
+        <div class="form-group">
+            <label>ID</label>
+            <input type="text" id="adminUser" placeholder="admin">
+        </div>
+        <div class="form-group">
+            <label>PIN</label>
+            <input type="password" id="adminPass" placeholder="••••">
+        </div>
+        <button onclick="checkAdmin()" class="btn-primary" style="width:100%;">Enter Dashboard</button>
+    </div>
+
+    <div id="generator-ui" class="admin-grid" style="display: none;">
+        <div class="admin-form">
+            <h4 style="font-family:'Playfair Display'; font-size:1.8rem; margin-bottom:1.5rem;">Create Passport</h4>
+            
+            <div class="form-group">
+                <label>Product Name</label>
+                <input type="text" id="fName" placeholder="e.g. Organic Strawberries">
+            </div>
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div class="form-group">
+                    <label>Origin</label>
+                    <input type="text" id="fOrigin" placeholder="Farm Location">
+                </div>
+                <div class="form-group">
+                    <label>Batch ID</label>
+                    <input type="text" id="fBatch" placeholder="e.g. AG-2026-X">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div class="form-group">
+                    <label>Harvest Date</label>
+                    <input type="date" id="fDate">
+                </div>
+                <div class="form-group">
+                    <label>Best Before</label>
+                    <input type="date" id="fExpiry">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div class="form-group">
+                    <label>Quality Grade</label>
+                    <select id="fGrade">
+                        <option value="A+ (Premium)">A+ (Premium)</option>
+                        <option value="A (High)">A (High)</option>
+                        <option value="B (Standard)">B (Standard)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Method</label>
+                    <select id="fMethod">
+                        <option value="100% Organic">100% Organic</option>
+                        <option value="Hydroponic">Hydroponic</option>
+                        <option value="Regenerative">Regenerative</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button onclick="generateQR()" class="btn-primary" style="width:100%; background:var(--accent); margin-top:10px;">Create QR Passport</button>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <div class="qr-display">
+                <div id="qrcode"></div>
+            </div>
+            <p id="qrText" style="margin-top:1.5rem; opacity:0.7; font-weight: 600;">Waiting for data...</p>
+        </div>
+    </div>
+</section>
+
+<div class="scanner-fab" onclick="startScanner()">
+    <span style="font-size:1.5rem;">📸</span>
+    <span>VERIFY PRODUCT</span>
+</div>
+
+<div id="cameraOverlay" style="position:fixed; inset:0; background:black; z-index:2000; display:none; flex-direction:column; align-items:center; justify-content:center;">
+    <div id="reader" style="width:85%; max-width:400px; border:3px solid var(--accent); border-radius:20px; overflow:hidden;"></div>
+    <button onclick="stopScanner()" class="btn-primary" style="margin-top:2rem; background:red; color:white;">Cancel</button>
+</div>
+
+<div id="resultModal">
+    <div class="modal-card">
+        <span style="color:#2d6a4f; font-weight:800; font-size:0.75rem; letter-spacing:1px;">VERIFIED SOURCE ✓</span>
+        <h2 id="resName" style="font-family:'Playfair Display'; font-size:2rem; margin:0.5rem 0 1rem 0;">Product</h2>
+        <div id="resDetails" style="font-size:0.95rem; line-height:2; color:#444;"></div>
+        <button onclick="closeModal()" class="btn-primary" style="width:100%; margin-top:2rem; background:#0d1f17; color:white;">Close</button>
+    </div>
+</div>
+
+<script>
+    const ADMIN = { user: "admin", pass: "agri2026" };
+    let scanner;
+
+    function checkAdmin() {
+        const u = document.getElementById('adminUser').value;
+        const p = document.getElementById('adminPass').value;
+        if(u === ADMIN.user && p === ADMIN.pass) {
+            document.getElementById('admin-login').style.display = 'none';
+            document.getElementById('generator-ui').style.display = 'grid';
+        } else { alert("Login failed!"); }
+    }
+
+    function generateQR() {
+        const data = {
+            name: document.getElementById('fName').value || "Farm Product",
+            origin: document.getElementById('fOrigin').value || "Local Farm",
+            batch: document.getElementById('fBatch').value || "BCH-" + Math.floor(Math.random()*1000),
+            date: document.getElementById('fDate').value || "N/A",
+            expiry: document.getElementById('fExpiry').value || "N/A",
+            grade: document.getElementById('fGrade').value,
+            method: document.getElementById('fMethod').value
+        };
+        
+        const qrelement = document.getElementById('qrcode');
+        qrelement.innerHTML = "";
+        new QRCode(qrelement, { text: JSON.stringify(data), width: 220, height: 220 });
+        document.getElementById('qrText').innerText = "Passport Active: " + data.batch;
+    }
+
+    function startScanner() {
+        document.getElementById('cameraOverlay').style.display = 'flex';
+        scanner = new Html5Qrcode("reader");
+        scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
+            try {
+                const data = JSON.parse(text);
+                showResult(data);
+                stopScanner();
+            } catch(e) {
+                alert("Invalid QR code.");
+                stopScanner();
+            }
+        });
+    }
+
+    function stopScanner() {
+        if(scanner) scanner.stop().then(() => { document.getElementById('cameraOverlay').style.display = 'none'; });
+    }
+
+    function showResult(data) {
+        document.getElementById('resName').innerText = data.name;
+        document.getElementById('resDetails').innerHTML = `
+            <b>🆔 ID:</b> ${data.batch}<br>
+            <b>📍 Farm:</b> ${data.origin}<br>
+            <b>📅 Harvest:</b> ${data.date}<br>
+            <b>⏳ Best Before:</b> ${data.expiry}<br>
+            <b>🌟 Grade:</b> ${data.grade}<br>
+            <b>🌱 Method:</b> ${data.method}
+        `;
+        document.getElementById('resultModal').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('resultModal').style.display = 'none'; }
+</script>
+
+</body>
+</html>
